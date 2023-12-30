@@ -1,0 +1,1343 @@
+String.prototype.escape = function() {
+    var tagsToReplace = {'<': '&lt;', '>': '&gt;'};
+    return this.replace(/[<>]/g, function(tag) {
+        return tagsToReplace[tag] || tag;
+    });
+};
+
+// indexOf function of Array, ex: ['a', 'b', 'c', 'd'].indexOf('c') ==> return 2;
+// ref: https://goo.gl/SaMyhh
+Array.prototype.indexOf || (Array.prototype.indexOf = function(d, e) {
+	var a;
+	if (null == this) throw new TypeError('"this" is null or not defined');
+	var c = Object(this),
+			b = c.length >>> 0;
+	if (0 === b) return -1;
+	a = +e || 0;
+	Infinity === Math.abs(a) && (a = 0);
+	if (a >= b) return -1;
+	for (a = Math.max(0 <= a ? a : b - Math.abs(a), 0); a < b;) {
+			if (a in c && c[a] === d) return a;
+			a++
+	}
+	return -1
+});
+
+//========移動box=========
+function saveCookies() {
+	cookieCounter = 0;
+	var tmpUrlArray = new Array();
+	for (var no = 1; no <= numberOfColumns; no++) {
+		var parentObj = document.getElementById('dragableBoxesColumn' + no);
+
+		var items = parentObj.getElementsByTagName('DIV');
+		if (items.length == 0)
+			continue;
+
+		var item = items[0];
+
+		var tmpItemArray = new Array();
+		while (item) {
+			var boxIndex = item.id.replace(/[^0-9]/g, '');
+			if (item.id != 'rectangleDiv') {
+				tmpItemArray[tmpItemArray.length] = boxIndex;
+			}
+			item = item.nextSibling;
+		}
+
+		var columnIndex = no;
+
+		for (var no2 = tmpItemArray.length - 1; no2 >= 0; no2--) {
+			var boxIndex = tmpItemArray[no2];
+			var url = dragableBoxesArray[boxIndex]['rssUrl'];
+			var heightOfBox = dragableBoxesArray[boxIndex]['heightOfBox'];
+			var maxRssItems = dragableBoxesArray[boxIndex]['maxRssItems'];
+			var minutesBeforeReload = dragableBoxesArray[boxIndex]['minutesBeforeReload'];
+			var uniqueIdentifier = dragableBoxesArray[boxIndex]['uniqueIdentifier'];
+			var state = dragableBoxesArray[boxIndex]['boxState'];
+			if (!tmpUrlArray[url]) {
+				tmpUrlArray[url] = true;
+				Set_Cookie(nameOfCookie + cookieCounter, url + '#;#'
+						+ columnIndex + '#;#' + maxRssItems + '#;#'
+						+ heightOfBox + '#;#' + minutesBeforeReload + '#;#'
+						+ uniqueIdentifier + '#;#' + state, 60000);
+				cookieRSSSources[url] = cookieCounter;
+				cookieCounter++;
+			} else {
+				Set_Cookie(nameOfCookie + cookieCounter, '' + '#;#'
+						+ columnIndex + '#;#' + '' + '#;#' + heightOfBox
+						+ '#;#' + '' + '#;#' + uniqueIdentifier, 60000);
+				cookieCounter++;
+			}
+
+		}
+	}
+	document.getElementById("boxValueInit").value = "true";
+	// document.getElementById("boxForm").action="eip2-box/setBoxValue.jsp";
+
+	var boxValueInit = document.getElementById("boxValueInit").value;
+	var boxValue = document.getElementById("boxValue").value;
+	dojo.xhrPost({
+		url : "boxSetPersonal.do",
+		content : {
+			boxValueInit : boxValueInit,
+			boxValue : boxValue
+		},
+		load : function(response, ioArgs) {
+			// =====重新顯示HTML BOX=======
+			boxHtmlAll();
+			// document.getElementById("boxForm").submit();
+		}
+	});
+}
+function boxPositionSave(act) {
+	var boxValue = "";
+	var allDivs = document.getElementsByClassName("area");
+	for (var i = 0; i < allDivs.length; i ++) {
+		var parentId = allDivs[i].parentElement.id.toUpperCase();
+		var iSort = i + 1;
+		var iColumn = 0;
+		if(parentId == "TOPLEFTAREA"){
+			iColumn = 1;
+		}else if(parentId == "TOPRIGHTSUBTOP"){
+			iColumn = 2;
+		}else if(parentId == "TOPRIGHTSUBLEFT"){
+			iSort = i + 3;
+			iColumn = 2;
+		}else if(parentId == "TOPRIGHTSUBRIGHT"){
+			iSort = i + 3;
+			iColumn = 3;
+		}else{
+			iSort = i + 3;
+			iColumn = parentId.indexOf("LEFTAREA") >= 0 ? 1 : parentId.indexOf("RIGHTAREA") >= 0 ? 3 : 2;
+		}
+		var boxId = allDivs[i].id;
+		boxValue += ";" + boxId + "," + iColumn + "," + iSort;
+	}
+	boxValue = boxValue.substring(1);
+	var isPass = chkBoxValue(boxValue); //===檢查功能框位置===
+	if(isPass){ //===檢查通過，存入LDAP個人資料===
+		dojo.xhrPost({
+			url: "boxSetPersonal3.do",
+			content: {boxValue: boxValue},
+			load: function(response, ioArgs) {
+
+			}
+		});
+	}else{ //===檢查發現錯誤，重新倒回首頁原狀===
+		toIndex();
+	}
+}
+function chkAllBox() {
+	var boxValue = "";
+	var allDivs = document.getElementsByClassName("boxOuter");
+	for (var i = 0; i < allDivs.length; i++) {
+		var parentId = allDivs[i].parentElement.id.toUpperCase();
+		var iSort = i + 1;
+		var iColumn = parentId.replace(/[\D]+/g, "");
+		var boxId = allDivs[i].id;
+		boxValue += ";" + boxId + "," + iColumn + "," + iSort;
+	}
+	boxValue = boxValue.substring(1, boxValue.length);
+
+	var isPass = chkBoxValue(boxValue); //===檢查功能框位置===
+	if(isPass){ //===檢查通過，存入LDAP個人資料===
+		dojo.xhrPost({
+			url: "boxSetPersonal3.do",
+			content: {boxValue: boxValue},
+			load: function(response, ioArgs) {
+
+			}
+		});
+	}else{ //===檢查發現錯誤，重新倒回首頁原狀===
+		toIndex();
+	}
+}
+// ===檢查功能框位置===
+// ----2012/04/10 for 嶺東：APTree要固定左上角-----
+function chkBoxValue(boxValue) {
+	return true;
+}
+// =====index======
+function toIndex() {
+	thetime = (new Date()).getTime();
+	// alert(thetime);
+	top.location.href = "myPortal.do?toIndex=TRUE&thetime=" + thetime;
+}
+// =====開啟webmail=======
+function webmail(mail_to) {
+	var thetime = (new Date()).getTime();
+	if (!window.winMail || winMail.closed) {
+		if (mail_to == undefined) {
+			window.winMail = window.open("ssoMail.do?thetime=" + thetime, 'winMail', "width=700,height=450,left=80,top=50,resizable=yes,scrollbars=yes");
+			window.winMail.focus();
+		} else {
+			window.winMail = window.open("ssoMail.do?mailTo=" + mail_to + "&thetime=" + thetime, 'winMail', "width=700,height=450,left=80,top=50,resizable=yes,scrollbars=yes");
+			window.winMail.focus();
+		}
+	} else {
+		window.winMail.focus();
+	}
+}
+// ===從組織通訊寄發郵件=======
+function orgtreeMailChk(dn) {
+	if (!window.winMail || winMail.closed) {
+		if(dn){
+			window.winMail = window.open("orgtreeMailChk.do?dn="+dn, 'winMail', "width=700,height=450,left=80,top=50,resizable=yes,scrollbars=yes");
+		}else{
+			window.winMail = window.open("orgtreeMailChk.do", 'winMail', "width=700,height=450,left=80,top=50,resizable=yes,scrollbars=yes");
+		}
+		window.winMail.focus();
+	} else {
+		alert("請先關閉既有電子郵件視窗，再重新寄發郵件。");
+		window.winMail.focus();
+	}
+}
+// =====開啟DAC=======
+function dac() {
+	var thetime = (new Date()).getTime();
+	var attwnd = window.open("dacLoginFromEip.do?thetime=" + thetime, 'attwnd', "width=700,height=450,left=80,top=50,resizable=yes,scrollbars=yes");
+	attwnd.focus();
+}
+// =====POPUP視窗===========
+function popupForm(ap_url, pop_title, pop_width, pop_left, pop_top, pop_winId) {
+	if (pop_left > window.document.body.clientWidth - pop_width) {
+		pop_left = window.document.body.clientWidth - pop_width - 9;
+	}
+	if (pop_left < 0) {
+		pop_left = 9;
+	}
+	dojo.xhrPost({
+		url : ap_url,
+		load : function(response, ioArgs) {
+			document.getElementById("popupCont").innerHTML = response;
+			createWindow(pop_title, pop_width, '#FFFFFF', pop_winId, pop_left, pop_top);
+		}
+	});
+}
+// =====POPUP組織視窗 for 選人員===========
+function popupOrg(org_url, excute_function, pop_width, pop_left, pop_top) {
+	if (pop_left > window.document.body.clientWidth - pop_width) {
+		pop_left = window.document.body.clientWidth - pop_width - 9;
+	}
+	if (pop_left < 0) {
+		pop_left = 9;
+	}
+	dojo.xhrPost({
+		url : org_url,
+		content : {
+			excuteFunction : excute_function
+		},
+		load : function(response, ioArgs) {
+			document.getElementById("popupCont").innerHTML = response;
+			createWindow("選擇人員", pop_width, '#FFFFFF', 1, pop_left, pop_top);
+		}
+	});
+}
+// =====Logout=======
+function logout() {
+	/*20201208發現這段邏輯會因為客戶透過WWW網站超連結到入口網造成誤判無法登出
+	if (window.opener == null) {
+		document.location.href = 'logout.do';
+	} else {
+		opener.document.location.href = 'logout.do';
+		window.close();
+	}*/
+	document.location.href = 'logout.do';
+}
+// =====EIP參數設定 表單=======
+function eipOptionForm() {
+	var thetime = (new Date()).getTime();
+	dojoAjaxHref("eipOptionForm.do?thetime=" + thetime);
+}
+// =====EIP參數設定 存檔=======
+function eipOption(type) {
+	var url = type + ".do";
+	dojo.xhrPost({
+		url : url,
+		form : "argumentForm",
+		load : function(response, ioArgs) {
+			alert("修改完成。");
+		}
+	});
+}
+// ===檢查閒置時間=====
+function updateTime() {
+	LogoutTime--;
+	sessionNowDate = new Date();
+	sessionNowTime = sessionNowDate.getTime();
+	sessionIdleSec = Math.floor((sessionNowTime-sessionActTime)/1000);
+	sessionOutSec = InitTime - sessionIdleSec;
+	//alert(sessionOutSec);
+
+	// alert(document.getElementById("muid").value);
+	// if(document.getElementById("muid").value == "admin")
+	// document.getElementById("debug").innerHTML =
+	// LogoutTime+"..."+timeoutAlertSec;
+	if(document.getElementById("debug"))
+		document.getElementById("debug").innerHTML = LogoutTime+"..."+timeoutAlertSec;
+	if(document.getElementById("sessionActDate"))
+		document.getElementById("sessionActDate").innerHTML = sessionActDate;
+	if(document.getElementById("sessionIdleSec"))
+		document.getElementById("sessionIdleSec").innerHTML = sessionIdleSec;
+	if(document.getElementById("sessionOutSec"))
+		document.getElementById("sessionOutSec").innerHTML = sessionOutSec;
+	if (sessionOutSec <= 0) {
+		clearTimeout(timerID);
+		// alert("您已超過"+InitTime/60+"分鐘未有任何動作。\n系統以安全考量，將自動幫您登出。\n請重新登入。");
+		location.href = "logout.do?timeout=" + (InitTime / 60);
+	} else {
+		if (sessionOutSec == timeoutAlertSec) { // ===當倒數剩3分鐘，跳出警示視窗=======
+			eipDialogPopup("windowOpenMsg.jsp?msg=", "系統提醒", 500);
+			document.onmousedown = null;
+			document.onkeydown = null;
+
+		} else if (sessionOutSec > 0 && sessionOutSec < timeoutAlertSec) {
+			var min = Math.floor(sessionOutSec / 60);
+			var sec = sessionOutSec % 60;
+			// var msg = "您已太久未有任何動作。<br>系統以安全考量，將於剩餘時間歸0時，自動幫您登出。<br>";
+			// msg += "如欲解除倒數計時對話框，請點選網頁任一地方即可繼續使用。<br>";
+			var msg = "<font color='#FF0000' size='4'>剩餘時間：" + min + "分" + sec + "秒</font>";
+			msg += "<br><input type='button' value='繼續使用' onclick='resetTime()' style='font-size:20px'>";
+			if (document.getElementById("eipLogoutTimer"))
+				document.getElementById("eipLogoutTimer").innerHTML = msg;
+			if (sessionOutSec == 1) {
+				eipDialogClose();
+			}
+		}
+		timerID = setTimeout("updateTime()", 1000);
+	}
+}
+function resetTime() {
+	if (document.getElementById("eipLogoutTimer")) {
+		eipDialogClose();
+		document.onmousedown = resetTime;
+		document.onkeydown = resetTime;
+	}
+	try {
+		LogoutTime = InitTime;
+		sessionActDate = new Date();
+		sessionActTime = sessionActDate.getTime();
+		
+		init();
+	} catch (err) {
+		// alert(err);
+	}
+}
+// =====檢查攔截視窗=====
+// function winOpenCheck(){
+// if(document.getElementById("winOpenFlag").value == "1")
+// popupForm("windowOpenMsg.jsp", "系統提醒", 500, 300, 200, 1);
+// }
+// =====統一的dialog=====
+function eipDialogPopup(url, title) {
+	var dialog = dijit.byId("eipDialog");
+	dialog.href = url;
+	dialog.id = "eipDialog";
+	dialog.refreshOnShow = true;
+	dialog.titleNode.innerHTML = title;
+/*	// ====指定寬度=====
+	if (width != undefined) {
+		dialog.domNode.style.width = width;
+	} else {
+		dialog.domNode.style.width = "";
+	}
+	// ====指定高度=====
+	if (height != undefined) {
+		dialog.domNode.style.height = height;
+		dialog.domNode.style.overflow = "auto";
+	} else {
+		dialog.domNode.style.height = "";
+		dialog.domNode.style.overflow = "hidden";
+	}*/
+	dialog.refresh();
+	dialog.show();
+}
+function eipDialogClose() {
+	dijit.byId("eipDialog").hide();
+	dijit.byId("eipDialog").destroyDescendants();
+}
+function nbgDialogPopup(url, title) {
+	var dialog = dijit.byId("nbgDialog");
+	dialog.href = url;
+	dialog.id = "nbgDialog";
+	dialog.refreshOnShow = true;
+	if (title != undefined)
+		dialog.titleNode.innerHTML = title;
+	dialog.refresh();
+	dialog.show();
+}
+function nbgDialogClose() {
+	dijit.byId("nbgDialog").hide();
+	dijit.byId("nbgDialog").destroyDescendants();
+}
+
+// 可執行script的Dialog
+function exeDialogPopup(url, title) {
+	var dialog = dijit.byId("exeDialog");
+	dialog.href = url;
+	dialog.id = "exeDialog";
+	dialog.refreshOnShow = true;
+	if (title != undefined)
+		dialog.titleNode.innerHTML = title;
+	dialog.executeScripts = true;
+	dialog.refresh();
+	dialog.show();
+}
+function exeDialogClose() {
+	dijit.byId("exeDialog").hide();
+	dijit.byId("exeDialog").destroyDescendants();
+}
+// =====統一的錯誤訊息=====
+function showErrorMsg(url, errStatus) {
+	if (errStatus == 500) {
+		alert("系統發生錯誤，請洽系統管理者。\nError：" + url);
+	} else if (errStatus == 404) {
+		alert("找不到網頁，請洽系統管理者。\nError：" + url);
+	} else if (errStatus == 12031 || errStatus == 0 || errStatus == 503) {
+		// alert("系統服務中斷，請您重新登入，便可繼續使用。");
+		// document.location.href='logout.do';
+	} else {
+		// alert("Error：["+url+"] request status is ["+errStatus+"]!!");
+	}
+}
+// ====刪掉已存在的dojox.layout.ContentPane=====
+function destroyDojoObject(obj_id) {
+	// alert(dijit.byId(obj_id));
+	// if(!dijit.byId(obj_id) || dijit.byId(obj_id) != undefined){
+	if (!dijit.byId(obj_id)) {
+
+	} else {
+		dijit.byId(obj_id).destroy();
+	}
+}
+function downloadErrorHandler(event) {
+	if (event.status == 503) {
+		console.log("downloadErrorHandler:", event);
+		alert('系統服務中斷，請您重新登入，便可繼續使用。');
+		top.window.location.href = 'logout.do';
+	} else {
+		console.log("downloadErrorHandler:", event);
+	}
+}
+function dojoAjaxHref(url, divId, noCache) {
+	var thetime = (new Date()).getTime();
+	if (url.indexOf("?") > 0) {
+		url += "&";
+	} else {
+		url += "?";
+	}
+	url += "thetime=" + thetime;
+	var eipDiv = (divId == undefined || divId == null || divId == '') ? dijit.byId("floatingBoxParentContainer") : dijit.byId(divId);
+	dojo.connect(eipDiv, "onDownloadError", downloadErrorHandler);
+	eipDiv.set("href", url);
+	if (noCache) {
+		// alert('noCache');
+	} else {
+		dojo.back.addToHistory({
+			back: function() {
+				//alert(url);
+				try{
+					eipDiv.set("href", url);
+				}catch (e) {
+					
+				}
+			},
+			forward: function() {
+				eipDiv.set("href", url);
+			}
+		});
+	}
+}
+function dojoAjaxPost(url, formName, divId, noCache) {
+	var eipDiv = (divId == undefined || divId == null || divId == '') ? dojo.byId("floatingBoxParentContainer") : dojo.byId(divId);
+	dojo.connect(eipDiv, "onDownloadError", downloadErrorHandler);
+	dojo.xhrPost({
+		url : url,
+		form : formName,
+		load : function(response, ioArgs) {
+			eipDiv.innerHTML = response;
+			if (noCache) {
+				// alert('noCache');
+			} else {
+				dojo.back.addToHistory({
+					changeUrl : true,
+					back : function() {
+						dojo.xhrPost({
+							url : url,
+							form : formName,
+							load : function(response, ioArgs) {
+								eipDiv.innerHTML = response;
+							}
+						});
+					},
+					forward : function() {
+						dojo.xhrPost({
+							url : url,
+							form : formName,
+							load : function(response, ioArgs) {
+								eipDiv.innerHTML = response;
+							}
+						});
+					}
+				});
+			}
+		}
+	});
+}
+// ====共用顯示週期性表單====
+function cycleForm(cType, cNo) {
+	destroyDojoObject("cycleDateEnd");
+	var theBtn = document.getElementById("btnCycle");
+	var theDiv = document.getElementById("divCycleForm");
+	if (theBtn.value == document.getElementById("btnCycleValue1").value && cType == '') {
+		cType = '0';
+	}
+	if (cType != '') {
+		dijit.byId("divCycleForm").set("href", "cycleForm.do?circleNo=" + cNo + "&cycleType=" + cType);
+		theBtn.value = document.getElementById("btnCycleValue2").value;
+	} else {
+		theDiv.innerHTML = "";
+		theBtn.value = document.getElementById("btnCycleValue1").value;
+	}
+}
+// ====鎖鍵盤，限制輸入數字====
+function inputLimit(e) {
+	var code = window.event ? e.keyCode : e.which;
+	return (code == 8 || (code >= 48 && code <= 57) || (code >= 96 && code <= 105));
+}
+function myHeaderWithImg(img, title, divId) {
+	dijit.byId(divId).set("href", "myHeaderWithImg.do?img=" + img + "&title=" + title);
+}
+// ====天氣設定首頁======
+function weatherPersonalIndex() {
+	var thetime = (new Date()).getTime();
+	dojoAjaxHref("weatherPersonalIndex.do?thetime=" + thetime);
+}
+// ===使用者個人log查詢=====
+function logPersonalIndex() {
+	dojoAjaxHref("logPersonalIndex.do");
+}
+// ====Logo管理首頁======
+function logoMgr() {
+	dojoAjaxHref("logoMgr.do");
+}
+// ===跑馬燈管理=========
+function marqueeMgrForm() {
+	dojoAjaxHref("marqueeMgrForm.do");
+}
+// ===點選「log月統計」===
+function logMonthCountIndex() {
+	dojoAjaxHref("logMonthCountIndex.do");
+}
+// ===功能列管理=====
+function tabMgrIndex() {
+	dojoAjaxHref("tabMgrIndex.do");
+}
+// ===跑馬燈=====
+function marqueeManager() {
+	eipDialogPopup("marqueeManager.do", "跑馬燈管理");
+}
+function marqueeAdmin() {
+	dojo.xhrPost({
+		url : "marqueeAdmin.do",
+		content : {
+			content : document.getElementById("desc").value,
+			fontSize : document.getElementById("fontSize").value,
+			fontColor : document.getElementById("fontColor").value,
+			speed : document.getElementById("speed").value
+		},
+		load : function(response, ioArgs) {
+			eipDialogClose();
+			alert(response);
+		}
+	});
+}
+// ===線上使用者清單=====
+function sessionList() {
+	dojoAjaxHref("sessionList.do");
+}
+// ===應用系統點擊統計=====
+function logReportSsoIndex() {
+	dojoAjaxHref("logReportSsoIndex.do");
+}
+// ===應用系統代理：設定=====
+function apDeputyIndex() {
+	dojoAjaxHref("apDeputyIndex.do");
+}
+// ===應用系統代理：單簽=====
+function apDeputySsoList() {
+	dojoAjaxHref("apDeputySsoList.do");
+}
+function apDeputySso(id) {
+	var apWin = null;
+	apWin = window.open("apDeputySso.do?id=" + id, "apWin",
+			"menubar=yes,toolbar=yes,location=no,resizable=yes,scrollbars=yes");
+	apWin.focus();
+}
+// ===應用系統授權/代理 log=====
+function apDeputyLogIndex() {
+	dojoAjaxHref("apDeputyLogIndex.do");
+}
+// ===應用系統代理功能管理=====
+function apDeputyMgrIndex() {
+	dojoAjaxHref("apDeputyMgrIndex.do");
+}
+// ===應用系統代理確認=====
+function apDeputySsoConfirm(adId, isAgree, type) {
+	var sMsg = "";
+	if (isAgree == "0")
+		sMsg = "同意";
+	else if (isAgree == "3")
+		sMsg = "拒絕";
+	else if (isAgree == "4")
+		sMsg = "終止";
+	if (confirm("確定要「" + sMsg + "」此筆代理系統嗎？")) {
+		dojo.xhrPost({
+			url : "apDeputySsoConfirm.do",
+			content : {
+				adId : adId,
+				isAgree : isAgree,
+				type : type
+			},
+			load : function(response, ioArgs) {
+				// alert(response);
+				if (response == "SUCCESS") {
+					if (document.getElementById("apDeputySsoType").value == "box") {
+						// ===首頁功能框===
+						dojoAjaxHref("apDeputySsoBox.do",
+								"div_apdeputyContent");
+					} else {
+						// ===重新導入【我的代理系統】===
+						apDeputySsoList();
+					}
+				} else {
+					alert("存檔失敗，請洽系統管理者。");
+				}
+			}
+		});
+	}
+}
+// ===APP ICON管理===
+function appIconMgrIndex() {
+	dojoAjaxHref("appIconMgrIndex.do");
+}
+// ===APP推播管理者設定===
+function appPushMgrIndex() {
+	dojoAjaxHref("appPushMgrIndex.do");
+}
+function appPushV2MgrIndex(userId) {
+	dojoAjaxHref("appPushV2MgrIndex.do"+ "?userId="+ (userId||""));
+}
+// ===APP推播使用者設定===
+function appPushOptionIndex() {
+	dojoAjaxHref("appPushOptionIndex.do");
+}
+function appPushV2OptionIndex() {
+	dojoAjaxHref("appPushV2UsrIndex.do");
+}
+//===APP各項統計===
+function appLogCountIndex(){
+	dojoAjaxHref("appLogCountIndex.do");
+}
+//===推播訊息記錄===
+function pnLogList(pageNo){
+	var sentDateStr = document.getElementById("sentDateStr") == null ? "" : document.getElementById("sentDateStr").value;
+	var sentDateEnd = document.getElementById("sentDateEnd") == null ? "" : document.getElementById("sentDateEnd").value;
+	var sender = document.getElementById("sender") == null ? "" : document.getElementById("sender").value;
+	var receiver = document.getElementById("receiver") == null ? "" : document.getElementById("receiver").value;
+	var content = document.getElementById("content") == null ? "" : document.getElementById("content").value;
+	var batchId = document.getElementById("batchId") == null ? "" : document.getElementById("batchId").value;
+	var pushFeedback = document.getElementById("pushFeedback") == null ? "" : document.getElementById("pushFeedback").value;
+	console.log("pushFeedback..."+pushFeedback);
+	dojoAjaxHref("pushNotificationMgrList.do?pageNo="+pageNo+"&sentDateStr="+sentDateStr+"&sentDateEnd="+sentDateEnd
+			+"&sender="+sender+"&receiver="+receiver+"&content="+content+"&batchId="+batchId+"&pushFeedback="+pushFeedback);
+}
+function pnLogDetail(batchId){
+	eipDialogPopup("pushNotificationDetail.do?batchId="+batchId,"詳細資料");
+}
+function pnLogExport(){
+	var sentDateStr = document.getElementById("sentDateStr") == null ? "" : document.getElementById("sentDateStr").value;
+	var sentDateEnd = document.getElementById("sentDateEnd") == null ? "" : document.getElementById("sentDateEnd").value;
+	var sender = document.getElementById("sender") == null ? "" : document.getElementById("sender").value;
+	var receiver = document.getElementById("receiver") == null ? "" : document.getElementById("receiver").value;
+	var content = document.getElementById("content") == null ? "" : document.getElementById("content").value;
+	var batchId = document.getElementById("batchId") == null ? "" : document.getElementById("batchId").value;
+	window.open("pushNotificationExport.do?sentDateStr="+sentDateStr+"&sentDateEnd="+sentDateEnd +"&sender="+sender+"&receiver="+receiver+"&content="+content+"&batchId="+batchId);	
+}
+
+// ===專案管理=====
+function projectIndex() {
+	dojoAjaxHref("projectIndex.do");
+}
+// ===通訊錄=====
+function contactInit() {
+	dojoAjaxHref("contactInit.do");
+}
+function contactIndex() {
+	dojoAjaxHref("contactIndex.do");
+}
+// ===IM貼圖管理===
+function imStickerMgrIndex() {
+	dojoAjaxHref("imStickerMgrIndex.do");
+}
+// ===IM廣播===
+function imBroadcastIndex() {
+	dojoAjaxHref("imBroadcastIndex.do");
+}
+//===IM廣播介接設定===
+function imBroadcastConfigIndex() {
+	dojoAjaxHref("broadcastConfigIndex.do");
+}
+//===回存ChatNotifySys資料表===
+function saveToChatNotifySys(id,sysId) {
+	var status = document.getElementById(id).value;
+	if(confirm("確定更改此系統的使用權限？")) {
+		dojo.xhrPost({
+			url : "broadcastConfigSave.do?sysId="+sysId+"&status="+status,
+			load : function(response, ioArgs) {
+				alert(response);
+			}
+		});
+	}else{
+		dojoAjaxHref("broadcastConfigIndex.do", "divCloudMain");
+	}
+}
+// ===IM Log===
+function imLogIndex() {
+	dojoAjaxHref("imLogIndex.do");
+}
+// ===APP市集=====
+function marketIndex() {
+	dojoAjaxHref("marketIndex.do");
+}
+function marketDnAdd() {
+	var theDns = orgtreeChkAll3();
+	if (theDns) {
+		eipDialogClose();
+		aJaxMemberShow(theDns, "divMarketMembers", "both");
+	}
+}
+function appStoreMain(){	
+	dojoAjaxHref("marketView.do");
+}
+// ===個資聲明管理系統===
+function privacyList() {
+	dojoAjaxHref("privacyList.do");
+}
+function privacyDnAdd() {
+	var theDns = orgtreeChkAll3();
+	if (theDns) {
+		eipDialogClose();
+		aJaxMemberShow(theDns, "divPrivacyMembers", "both");
+	}
+}
+// IM Log-LOG查詢
+function imLogList() {
+	document.getElementById("btnSearch").disabled = true;
+	document.getElementById("btnSearch").value = "查詢中，請稍候";
+
+	dojoAjaxHref("imLogList.do?" + dojo.formToQuery("imLogForm"), "divImLogList");
+
+	document.getElementById("btnSearch").value = "查詢";
+	document.getElementById("btnSearch").disabled = false;
+}
+function imLogListPage(page) {
+	document.getElementById("btnSearch").disabled = true;
+	document.getElementById("btnSearch").value = "查詢中，請稍候";
+	dojo.xhrPost({
+		url : "imLogList.do?page=" + page,
+		form : "imLogForm",
+		load : function(response, ioArgs) {
+			document.getElementById("btnSearch").value = "查詢";
+			document.getElementById("btnSearch").disabled = false;
+			document.getElementById("divImLogList").innerHTML = response;
+		}
+	});
+}
+
+// IM Log-LOG查詢
+function imLogReportExport() {
+	window.open("imLogReportExport.do?" + dojo.formToQuery("imLogForm"));
+}
+function imOuSel() {
+	// eipDialogPopup('contactDialogIndex.do?excuteFunction=imOuSelShow&submitFunction=&target=ouOnly','選擇機關');
+	eipDialogPopup("orgtreeOuIndex.do?excuteFunction=imOuSelShow&submitFunction=", "選擇機關");
+}
+
+function imOuSelShow(orgType, orgName, orgDn) {
+	document.getElementById("orgDn").value = orgDn;
+	document.getElementById("spanOrgName").innerHTML = orgName;
+	eipDialogClose();
+}
+
+function imUserSel() {
+	// eipDialogPopup('contactDialogIndex.do?excuteFunction=imUserSelShow&submitFunction=&target=userOnly','選擇人員');
+	eipDialogPopup("orgtreeBox.do?excuteFunction=imUserSelShow&submitFunction=&box=dialog", "選擇人員");
+}
+
+function imUserSelShow(orgType, orgName, orgDn) {
+	if (orgType != "PERSON") {
+		alert("請選擇人員。");
+	} else {
+		document.getElementById("userDn").value = orgDn;
+		document.getElementById("spanUserName").innerHTML = orgName;
+		eipDialogClose();
+	}
+}
+
+// ===WebService允許IP設定===
+function eipOptionWsForm() {
+	dojoAjaxHref("eipOptionWsForm.do");
+}
+
+/*
+ * //====新版首頁====== function home(){ var thetime = (new Date()).getTime();
+ * dojoAjaxHref("home.do?thetime="+thetime); } //=====開啟webmail，並指定第幾封=======
+ * function webmailShow(uid){ var attwnd =
+ * window.open("ssoMail.do?mailUid="+uid,'attwnd',"width=700,height=450,left=80,top=50,resizable=yes,scrollbars=yes");
+ * attwnd.focus(); }
+ */
+// ===傳送推播訊息=====
+function pnAddForm() {
+	dojoAjaxHref("pushNotificationAddForm.do");
+}
+// ===推播訊息選擇對象=====
+function pnReceiverAdd() {
+	var theDns = orgtreeChkAll3();
+	if (theDns) {
+		eipDialogClose();
+		aJaxMemberShow(theDns, "divPnMembers", "both");
+	}
+}
+function aJaxMemberShow(dn, divObj, scope) {
+	// scope:person只含成員，both含成員、群組
+	var errorMsg1 = false;
+	var errorMsg2 = false;
+	var attrs = null;
+	if(document.getElementById("attrs") != undefined)
+		attrs = document.getElementById("attrs").value;
+	dojo.xhrPost({
+		url : "ajaxMemberShow.do",
+		handleAs : "json",
+		content : {
+			"memberDns" : dn,
+			"attrs": attrs
+		},
+		load : function(response, ioArgs) {
+			var html = [];
+			var htmlStr = "";
+			for (var i = 0; i < response.length; i++) {
+				if (scope == "person" && response[i].group) {
+					errorMsg1 = true;
+					// 跳過群組
+					continue;
+				} else if (scope == "group" && !response[i].group) {
+					errorMsg2 = true;
+					// 跳過人員
+					continue;
+				} else {
+					html.push("<span style=\"white-space:nowrap;font-size:12pt\">");
+					if (response[i].group) {
+						html
+								.push("<img src=\"images/tree/group.png\"/>");
+					} else {
+						html
+								.push("<img src=\"images/tree/person_on.png\"/>");
+					}
+					html.push(response[i].givenName);
+					html
+							.push(includeDeleteHtml(response[i].dn,
+									divObj));
+					html.push("<br>");
+					html
+							.push("<input type=\"hidden\" name=\"memberDns\" value=\""
+									+ response[i].dn + "\">");
+					html
+							.push("<input type=\"hidden\" name=\"memberNames\" value=\""
+									+ response[i].givenName + "\">");
+					html
+					.push("<input type=\"hidden\" name=\"memberCns\" value=\""
+							+ response[i].cn + "\">");
+					if(attrs != null || attrs != undefined){
+						var attrArr = attrs.split(";");
+						for (var j = 0; j < attrArr.length; j++) {
+							var attr = attrArr[j].toString();
+							//alert(response[i][attr]);
+							if(response[i][attr] != undefined){
+								html.push("<input type=\"hidden\" name=\""+attr+"\" value=\""
+										+ response[i][attr]+ "\">");
+							}
+						}
+					}
+					/*for(var key in response[i]){
+				        if(response[i].hasOwnProperty(key)) {
+				          console.info(key + ': ' + response[i][key]);
+				        }
+				   }*/
+					html.push("</span>");
+				}
+			}
+			htmlStr = html.join("|");
+			htmlStr = htmlStr.replace(/\|/g, ' ');
+			var newdiv = document.createElement("div");
+			newdiv.innerHTML = htmlStr;
+			var container = document.getElementById(divObj);
+			container.appendChild(newdiv);
+			if (errorMsg1)
+				alert("請勿選擇「群組」。");
+			if (errorMsg2)
+				alert("請勿選擇「人員」。");
+		}
+	});
+}
+
+//可指定參數名稱
+function aJaxMemberShow2(dn, divObj, scope, memberObjId, memberObjName) {
+	// scope:person只含成員，both含成員、群組
+	var errorMsg = false;
+	dojo.xhrPost({
+		url : "ajaxMemberShow.do",
+		handleAs : "json",
+		content : {
+			"memberDns" : dn
+		},
+		load : function(response, ioArgs) {
+			var html = [];
+			var htmlStr = "";
+			for (var i = 0; i < response.length; i++) {
+				if (scope == "person" && response[i].group) {
+					errorMsg = true;
+					// 跳過群組
+					continue;
+				} else {
+					html.push("<span style=\"white-space:nowrap\">");
+					if (response[i].group) {
+						html.push("<img src=\"images/tree/group.png\"/>");
+					} else {
+						html.push("<img src=\"images/tree/person_on.png\"/>");
+					}
+					html.push(response[i].givenName);
+					html.push(includeDeleteHtml(response[i].dn, divObj));
+					html.push("<br>");
+					html.push("<input type=\"hidden\" name=\"" + memberObjId
+							+ "\" value=\"" + response[i].dn + "\">");
+					html.push("<input type=\"hidden\" name=\"" + memberObjName
+							+ "\" value=\"" + response[i].givenName + "\">");
+					html.push("</span>");
+				}
+			}
+			htmlStr = html.join("|");
+			htmlStr = htmlStr.replace(/\|/g, ' ');
+			var newdiv = document.createElement("div");
+			newdiv.innerHTML = htmlStr;
+			var container = document.getElementById(divObj);
+			container.appendChild(newdiv);
+			if (errorMsg)
+				alert("請勿選擇「群組」。");
+		}
+	});
+}
+
+//可指定多個參數名稱
+function includeDeleteHtml(removeDn, divObj) {
+	var html = "<img src=\"images/delete.gif\" onclick=\"deleteMemberInForm(this,'" + removeDn + "','" + divObj + "')\"/>";
+	return html;
+}
+function deleteMemberInForm(obj, removeDn, divObj) {
+	obj.parentNode.parentNode.removeChild(obj.parentNode);
+	var delHiddenHtml = "<input type=\"hidden\" name=\"delMemberIds\" value=\""+ removeDn+ "\">"; //欲刪除的識別碼
+	var newdiv = document.createElement("div");
+	newdiv.innerHTML = delHiddenHtml;
+	var container = document.getElementById(divObj);
+	container.appendChild(newdiv);
+}
+function pnAdd() {
+	var pass = true, pnContent= document.getElementById("pnContent");
+	if (pnContent && pnContent.value == "") {
+		pass = false;
+		alert("請輸入內容。");
+	}
+	else if (pnContent && pnContent.value.length>500) {
+		pass = false;
+		alert("內容限500字內。");
+	}
+	else if( !(document.getElementById("subscribeType1").checked||document.getElementById("subscribeType2").checked
+			 ||document.getElementById("subscribeType3").checked||document.getElementById("subscribeType4").checked) ) {
+		pass = false;
+		alert("請選擇對象。");
+	}
+	else if (document.getElementById("subscribeType1").checked && !document.getElementById("pushNotificationForm").memberDns) {
+		pass = false;
+		alert("請選擇指定對象。");
+	}
+	if (pass) {
+		var theForm = document.getElementById("pushNotificationForm");
+		document.getElementById("pnSubmitBtn").value = "發送中...";
+		document.getElementById("pnSubmitBtn").disabled = true;
+		dojo.xhrPost({
+			url : "pushNotificationAdd.do",
+			form : theForm,
+			handleAs : "json",
+			load : function(response, ioArgs) {
+				if (response.returnMsg.indexOf("SUCCESS") != -1) {
+					alert("發送成功。");
+					pnAddForm();
+				} else if (response.returnMsg.indexOf("errorCode1") != -1
+						|| response.returnMsg.indexOf("errorCode2") != -1) {
+					var html = [];
+					var htmlStr = "";
+					document.getElementById("pnResetBtn").style.display = "block";
+					document.getElementById("pnSubmitBtn").style.display = "none";
+					document.getElementById("divNoDevice").style.display = "block";
+					document.getElementById("divNoDeviceUser").style.display = "block";
+					for (var i = 0; i < response.noDeviceList.length; i++) {
+						html.push("<span style=\"white-space:nowrap\">");
+						html.push("<img src=\"images/tree/person_on.png\"/>");
+						html.push(response.noDeviceList[i]);
+						html.push("<br>");
+						html.push("</span>");
+					}
+					htmlStr = html.join("|");
+					htmlStr = htmlStr.replace(/\|/g, ' ');
+					var newdiv = document.createElement("div");
+					newdiv.innerHTML = htmlStr;
+					var container = document.getElementById("divNoDeviceUser");
+					container.appendChild(newdiv);
+					if (response.returnMsg.indexOf("errorCode2") != -1)
+						alert("部份使用者發送成功。");
+				} else if (response.returnMsg.indexOf("errorCode0") != -1) {
+					alert("發送失敗，請聯絡系統管理者。");
+					pnAddForm();
+				}
+			}
+		});
+	}
+}
+function pnClearSubscribers() {
+	document.getElementById("divPnMembers").innerHTML= "";
+	/*
+		var objs = document.getElementById("divPnMembers").childNodes[0].childNodes;
+		for(var i = objs.length-1; i >= 0; i--) { 
+			alert(objs[i]);
+			if (objs[i].tagName == 'SPAN') {
+				objs[i].parentNode.removeChild(objs[i]);
+		    }
+		}
+	*/
+}
+/* 抽獎 */
+function drawLotsIndex(sMgr) {
+	dojoAjaxHref("drawLotsIndex.do?sMgr=" + sMgr);
+}
+function drawLotsIndexEdit(id) {
+	dojoAjaxHref("drawLotsIndex.do?sMgr=true&id="+id);
+}
+function drawLotsConfigForm() {
+	dojoAjaxHref("drawLotsConfigForm.do");
+}
+function drawLotsLinkIndex(quesDn, type) {
+	nbgDialogPopup("drawLotsLinkIndex.do?quesDn=" + quesDn + "&type=" + type, "QR報到");
+	setTimeout("drawLotsLinkForm('"+quesDn+"','"+type+"')",1000);
+}
+function drawLotsLinkForm(quesDn, type) {
+	dijit.byId("divDrawLotsLinkContent").set("href", "drawLotsLinkForm.do?quesDn=" + quesDn + "&type=" + type);
+}
+function drawLotsLinkSel(quesDn, type) {
+	var spanDlLinkName = document.getElementById("spanDlLinkName");
+	if (spanDlLinkName != null) {
+		alert("只能結合一筆資料，請先解除已結合的QR報到及抽獎。");
+	} else {
+		eipDialogPopup("drawLotsLinkSel.do?quesDn=" + quesDn + "&type=" + type, "選擇QR報到及抽獎資料");
+	}
+}
+function drawLotsLink(id, quesDn, type) {
+	if (confirm("請注意！結合後，該筆QR報到會變成【已發佈】狀態，請確定是否結合？")) {
+		var btns = document.getElementsByName("drawLotsLinkBtn");
+		for (var i = 0; i < btns.length; i++) {
+			btns[i].disabled = true;
+		}
+		dojo.xhrPost({
+			url : "drawLotsLink.do",
+			content : {
+				id : id,
+				quesDn : quesDn,
+				type : type
+			},
+			load : function(response, ioArgs) {
+				if (response == null || response == "") {
+					alert("設定失敗，請聯絡系統管理者。");
+				} else {
+					alert("設定完成。");
+					eipDialogClose();
+					drawLotsLinkForm(quesDn, type);
+				}
+			}
+		});
+	}
+
+}
+
+//新增QR報到-同時發佈
+function drawLotsFromQuesPublish(quesDn, type){
+	var spanDlLinkName = document.getElementById("spanDlLinkName");
+	if (spanDlLinkName != null) {
+		alert("只能結合一筆資料，請先解除已結合的QR報到及抽獎。");
+	} else {
+		dojo.xhrPost({ 
+			url: "drawLotsFromQuesPublish.do?questionaryDn="+quesDn+"&type="+type,	
+			load: function(response, ioArgs) {
+				if(response==null||response==""){
+					alert("設定失敗，請聯絡系統管理者。");
+				}else{
+					alert("設定完成。");
+					drawLotsLinkForm(quesDn, type);
+				}
+	
+			}
+		});
+	}
+}
+//新增QR報到-繼續編輯
+function drawLotsFromQuesAdd(quesDn, type){
+	var spanDlLinkName = document.getElementById("spanDlLinkName");
+	if (spanDlLinkName != null) {
+		alert("只能結合一筆資料，請先解除已結合的QR報到及抽獎。");
+	} else {
+		dojo.xhrPost({ 
+			url: "drawLotsFromQuesAdd.do?questionaryDn="+quesDn+"&type="+type,	
+			load: function(response, ioArgs) {
+				if(response==null||response==""){
+					alert("設定失敗，請聯絡系統管理者。");
+				}else{
+					if(confirm("新增完成，但請注意此QR報到仍在草稿區，需發佈後才生效。\n請問是否要離開本畫面，繼續編輯QR報到。")){
+						nbgDialogClose();
+						drawLotsIndexEdit(response);
+					}else{
+						drawLotsLinkForm(quesDn, type);
+					}
+				}
+			}
+		});
+	}
+}
+function drawLotsLinkDel(id, quesDn, type) {
+	if (confirm("請注意！解除結合後，該筆QR報到會變成【已下架】狀態，請確定是否解除？")) {
+		// document.getElementById("drawLotsPrizeSaveBtn").value = "儲存中...";
+		dojo.xhrPost({
+			url : "drawLotsLinkDel.do",
+			content : {
+				id : id
+			},
+			load : function(response, ioArgs) {
+				if (response == null || response == "") {
+					alert("設定失敗，請聯絡系統管理者。");
+				} else {
+					alert("設定完成。");
+					// nbgDialogClose();
+					drawLotsLinkForm(quesDn, type);
+					// dijit.byId("drawLotsLinkFormDiv").set("href",
+					// "drawLotsLinkForm.do?quesDn="+quesDn);
+					// setTimeout(drawLotsLinkForm(quesDn),1000);
+					// drawLotsLinkForm(quesDn);
+				}
+			}
+		});
+	}
+}
+function menuBgColorSwitch(dom) {
+	var domArray = document.getElementsByTagName("div");
+	for (var i = 0; i < domArray.length; i++) {
+		if (domArray[i].id.indexOf("divMenuItem") == 0) {
+			domArray[i].className = "";
+		}
+	}
+	dom.className = "click";
+}
+function menuBgColorSwitchById(id) {
+	var domArray = document.getElementsByTagName("div");
+	for (var i = 0; i < domArray.length; i++) {
+		if (domArray[i].id.indexOf("divMenuItem") == 0) {
+			domArray[i].className = "";
+		}
+	}
+	var dom = document.getElementById(id);
+	dom.className = "click";
+}
+//新-左邊Menu
+function menuSwitch(key){
+	var dom = document.getElementById("menuItem"+key);
+	if(document.getElementById("menuTr"+key).style.display == "none"){
+		dom.className = "startWithArrowDown";
+		document.getElementById("menuTr"+key).style.display = "";
+	}else{ //======若資料夾下有資料，則「清空」資料==========
+		dom.className = "startWithArrowRight";
+		document.getElementById("menuTr"+key).style.display = "none";
+	}
+}
+function surveyInit(){
+	dojoAjaxHref("surveyInit.do");
+}
+function privacyAgree(agree) {	
+	var pass = true;
+	if(agree == 'false'){
+		if(!confirm("您目前點選不同意使用您的個資，請您務必在審閱期間內詳讀聲明書之影響權益部份，以免影響自身權益。")){
+			pass = false;
+		}
+	}
+	if(pass){
+		dojo.xhrPost({
+			url: "privacyAgree.do",
+			content: {agree:agree},	
+			load: function(response, ioArgs) {			
+				location.href = response;
+			}
+		});
+	}	
+}
+function privacyLogList(pageNo){	
+	eipDialogPopup("privacyUserLogList.do?pageNo="+pageNo,"個資簽署歷史記錄");
+}
+function privacyLogForm(id){	
+	nbgDialogPopup("privacyUserLogForm.do?id="+id,"個資聲明");
+}
+// 全文檢索
+function searchEngineList(){
+	searchEngineListPage(1);
+}
+function searchEngineKeywordAdd(){
+	// 紀錄關鍵字
+	var theForm = document.formSearchEngine;
+	var theKwd = theForm.searchKwd.value;
+	dojo.xhrPost({
+		url: "searchEngineKeywordAdd.do",
+		content: {searchKwd:theKwd},	
+		load: function(response, ioArgs) {
+			if(response!="SUCCESS"){
+				alert("紀錄關鍵字時發生錯誤，請洽系統管理者。");
+			}
+		}
+	});
+}
+function searchEngineFuncId(funcId){
+	document.formSearchEngine.funcId.value = funcId;
+	searchEngineListPage(1);
+}
+function searchEngineListPage(page){
+	var theForm = document.formSearchEngine;
+	var theKwd = theForm.searchKwd.value;
+	var theFuncId = theForm.funcId.value;
+	//alert(theKwd);
+	//alert(theFuncId);
+	/*
+	var theChkValue = 0;
+	var theChks = document.getElementsByName("chkSearchEngineRead");
+	//alert(theChks.length);
+	for(i=0;i<theChks.length;i++){
+		if(theChks[i].checked)
+			theChkValue = i;
+	}
+	//alert(theChkValue);
+	//dojoAjaxHref("searchEngineList.do?page="+page+"&funcId="+theFuncId+"&chkRead="+theChkValue+"&searchKwd="+encodeURIComponent(theKwd));
+	*/
+	var theSortBy = "";
+	var theChks = document.getElementsByName("chkSearchEngineSort");
+	//alert(theChks.length);
+	for(i=0;i<theChks.length;i++){
+		if(theChks[i].checked)
+			theSortBy = i;
+	}
+	// 20230303桃園客製：市政會議專區
+	if(theFuncId=="EFOLDER_MEETING"){
+        theFuncId = "EFOLDER";
+        if(theSortBy=="" || theSortBy=="0"){
+            theSortBy = "2";
+        }else{
+            theSortBy = "3";
+        }
+    }
+	//alert(theSortBy);
+	dojoAjaxHref("searchEngineList.do?page="+page+"&funcId="+theFuncId+"&sortBy="+theSortBy+"&searchKwd="+encodeURIComponent(theKwd));
+}
+//搜尋框自動補齊
+function searchKwdDown(){
+	var theKwdValue = document.getElementById("searchKwd").value;
+	//document.getElementById("searchKwd").value = theKwdValue;
+	//alert(theKwdValue);
+	var returnCount = 0;
+	if(theKwdValue != ""){
+		dojo.xhrPost({ 
+			url : "searchEngineKeywordList.do",
+			form: "formSearchEngine",
+			handleAs: "json",
+			load : function(response, ioArgs) {
+				returnCount = response.size;
+				var sTmp = "<datalist id='dataListSearchKwdItem'>";
+				for (var i=0; i < response.size; i++) {
+					sTmp += "<option>"+response.list[i]+"</option>";
+				}
+				sTmp += "</datalist>";
+				document.getElementById("divSearchKwdList").innerHTML = sTmp;
+			}
+		});
+	}else{
+		var sTmp = "<datalist id='dataListSearchKwdItem'>";
+		sTmp += "<option></option>";
+		sTmp += "</datalist>";
+		document.getElementById("divSearchKwdList").innerHTML = sTmp;
+	}
+}
+// 搜尋出討論區
+function searchEngineForwardForum(fcNo){
+	eipDialogPopup("searchEngineForwardForum.do?fcNo="+fcNo,"討論區內容");
+}
+// 寄信測試
+function mailTestForm(){
+	dojoAjaxHref("mailTestForm.do");
+}
+//從雲端硬碟選擇附件
+function pickFormEfolder(dn){
+    eipDialogPopup("pickFormEfolder.do?efolderDn=" + encodeURIComponent(dn), "從雲端硬碟挑選");
+}
+function insertAttachmentLink(){
+	var parent = document.getElementById("divCalFiles");
+	document.getElementById("pickFromEfolderForm").querySelectorAll("input[type=checkbox]:checked").forEach(function(item){
+		var newDiv = document.createElement("div");
+		newDiv.style.cssText = "width:100%;text-align:left;float:left;";
+		var link = document.createElement("a");
+		link.setAttribute("href","javascript:efolderFileDownloadCheck('" + item.value + "')");
+		link.appendChild(document.createTextNode(item.getAttribute('data-show')));
+		newDiv.appendChild(link);
+		var input1 = document.createElement("input");
+		input1.setAttribute("type", "hidden");
+		input1.setAttribute("name", "realImages");
+		input1.setAttribute("value", item.getAttribute('data-real'));
+		newDiv.appendChild(input1);
+		var input2 = document.createElement("input");
+		input2.setAttribute("type", "hidden");
+		input2.setAttribute("name", "fileImages");
+		input2.setAttribute("value", item.getAttribute('data-show'));
+		newDiv.appendChild(input2);
+		var input3 = document.createElement("input");
+		input3.setAttribute("type", "hidden");
+		input3.setAttribute("name", "fileDns");
+		input3.setAttribute("value", item.value);
+		newDiv.appendChild(input3);
+		var remove = document.createElement("a");
+		remove.setAttribute("href","javascript:void(0)");
+		remove.onclick = function(){parent.removeChild(newDiv)};
+		remove.setAttribute("class", "eipDropIcon eipIcon");
+		remove.style.cssText = "float:right;";
+		newDiv.appendChild(remove);
+		parent.appendChild(newDiv);
+	});
+	eipDialogClose();
+}
+// 雲端硬碟第1.2層資料夾統計
+function efolderStatisticIndex() {
+    dojoAjaxHref("efolderStatisticIndex.do");
+}
+// 雲端硬碟第1.2層資料夾統計匯出
+function efolderStatisticExport() {
+    window.open("efolderStatisticIndex.do?export=1");
+}
