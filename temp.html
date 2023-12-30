@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    .flex-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+/* Adjust the max-width as needed */
+      margin: 0 auto; /* Center the flexbox horizontally */
+    }
+
+    .form-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .label {
+      min-width: 80px; /* Adjust the min-width as needed */
+      text-align: right;
+      margin-right: 1em;
+    }
+
+    .input {
+      flex-grow: 1;
+      padding: 0.5em;
+    }
+
+    .login-button {
+      margin-top: 1em;
+      text-align: center;
+    }
+
+    button {
+      padding: 0.5em 1em;
+    }
+  </style>
+</head>
+<body>
+  <div class="flex-container">
+    <div class="form-row">
+      <div class="label">Username:</div>
+      <input type="text" class="input" placeholder="Enter your username">
+    </div>
+
+    <div class="form-row">
+      <div class="label">Password:</div>
+      <input type="password" class="input" placeholder="Enter your password">
+          </div>
+
+    <div class="form-row captcha-row">
+      <div class="label">Verification:</div>
+      <input type="text" class="input" placeholder="Enter verification code">
+      <div class="captcha-label">Captcha:</div>
+      <div class="captcha-text">    
+    </div>
+
+    <div class="login-button">
+      <button>Login</button>
+    </div>
+  </div>
+</body>
+</html>
