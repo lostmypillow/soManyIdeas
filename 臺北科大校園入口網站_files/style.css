@@ -1,0 +1,208 @@
+body{
+	background:url(../images/bg.jpg) repeat-x;
+	}
+
+#wrap{
+	width:1000px;
+	height:600px;
+	position:relative;
+	top:0;
+	left:50%;
+	margin-left:-500px;
+	z-index:0;
+	background: url(../images/bg02.png) no-repeat center top;
+	}
+
+.header{
+	width: 386px;
+	font-family:"微軟正黑體";
+	position: absolute;
+	left:0;
+	top:32px;
+	}
+
+
+#sliderShow{
+	position: absolute;
+	left:110px;
+	top: 365px;
+	}
+
+
+.rslides {
+  position: relative;
+  list-style: none;
+  overflow: hidden;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  }
+
+.rslides li {
+  -webkit-backface-visibility: hidden;
+  position: absolute;
+  display: none;
+  width: 100%;
+  left: 0;
+  top: 0;
+  }
+
+.rslides li:first-child {
+  position: relative;
+  display: block;
+  float: left;
+  }
+
+.rslides img {
+  display: block;
+  height: auto;
+  float: left;
+  border: 0;
+  }
+ 
+.boxContent{
+	width:320px;
+	height:285px;
+	border-radius:10px;
+	-moz-border-radius:10px;
+	-webkit-border-radius:10px;
+	border-radius:10px;
+	behavior: url(css/PIE.htc);
+	text-align: center;
+	float: right;
+	margin-right:228px;
+	margin-top: 80px;
+	}
+
+.form{
+	width:320px;
+	height:245px;
+	font-family:"微軟正黑體";
+	border-radius:10px;
+	behavior: url(css/PIE.htc);
+	/*padding:20px;*/
+	text-align: left;
+	}
+	
+.co{
+	margin:5px 0;
+	height:30px;
+	display: inline-block;
+	}
+
+.title{
+	width: 100px;
+	margin-right:10px;
+	color:#333;
+	float:left;
+	text-align:right;
+	font-size:16px;
+	}
+
+.titleEng{font-size:12px; color:#999;}
+
+.l_id{
+	width:170px;
+	border:1px solid #ccc;
+	background-color:#FFF;
+	height: 32px;
+	margin-top: 3px;
+	float:left;
+	font-size: 1.4em;
+	border-radius:3px;
+	-webkit-border-radius:3px;
+	-o-border-radius:3px;
+	-ms-border-radius:3px;
+	-moz-border-radius:3px;
+	}
+	
+.number{
+	width:58px;
+	height:28px;
+	border:1px solid #ccc;
+	display:inline-block;
+	vertical-align:middle;
+	}
+
+.loginBtn{
+	margin:5px 0 0 70px;
+	text-align:center;
+	font-size:15px;
+	}
+
+.loginBtn a{
+	color:#666;
+	margin-right:20px;
+	}
+
+.loginBtn a:hover{color:#00AFEA}
+
+.l_icon01{
+	width:160px;
+	height:35px;
+	line-height:1;
+	border-radius:30px;
+	-moz-border-radius:30px;
+	-webkit-border-radius:30px;
+	behavior: url(css/PIE.htc);
+	position:relative;
+	background:#429bbb;
+	border:0;
+	color:#fff;
+	font-size:16px;
+	font-family:"微軟正黑體";
+	cursor:pointer;
+	transition: 0.5s all;
+	-webkit-transition: 0.5s all;
+	-moz-transition: 0.5s all;
+	-o-transition: 0.5s all;
+	-ms-transition: 0.5s all;
+	}
+
+.l_icon01:hover{
+	background-color:#0b5873;
+	}
+	
+.notice{
+	margin-top: 160px;
+	margin-left: 400px;
+	}
+
+.notice li{
+	font-family:"微軟正黑體";
+	font-size: 13px;
+	color: #666;
+	line-height: 1.5em;
+}
+
+
+.lab01{
+	background:url(../images/label.png) no-repeat;
+	color:#FC0;
+	border-left:5px solid #FC0;
+	}
+
+.lab02{
+	background:url(../images/label.png) no-repeat;
+	color:#6C3;
+	border-left:5px solid #6C3;
+	}
+
+.lab03{
+	background:url(../images/label2.png) no-repeat;
+	color:#F36;
+	border-left:5px solid #F36;
+	}
+
+
+.copyright{
+	width:1000px;
+	margin:0 auto;
+	font-family:"微軟正黑體";
+	color:#EEE;
+	font-size:12px;
+	text-align:center;
+	line-height:35px;
+	position:relative;
+	}
+
