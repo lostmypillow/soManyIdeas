@@ -6,7 +6,7 @@ body {
     font-weight: regular;
   }
   
-  button {
+.formbold-btn {
     border-radius: 4px;
     background-color: #429bbb;
     border: none;
@@ -23,7 +23,7 @@ body {
     transition: 0.5s;
   }
   
-  button:after {
+.formbold-btn:after {
     content: url('log-in.svg');
     position: absolute;
     opacity: 0;
@@ -32,16 +32,30 @@ body {
     transition: 0.5s;
   }
   
-  button:hover {
+.formbold-btn:hover {
     padding-right: 1.5em;
     padding-left: 0.5em;
   }
   
-  button:hover:after {
+.formbold-btn:hover:after {
     opacity: 1;
     right: 0.625em;
   }
-  
+
+
+button{
+    padding: 10px 20px;
+    font-size: 1.5em;
+    color: white;
+    background-color: hsl(214, 100%, 74%);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.25s;
+}
+
+button:hover{
+    background-color: hsl(214, 100%, 56%);
+}
   .container {
     display: flex;
     width: 100%;
@@ -59,6 +73,7 @@ body {
   
   .item-25 {
     flex: 1;
+    flex-direction: column;
   }
   
   .item-50 {
