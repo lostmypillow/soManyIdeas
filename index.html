@@ -12,39 +12,54 @@
 </head>
 <body>
   <div class="container">
-    <div class="item item-25"></div>
+    <div class="item item-25"><label id="countLabel">0</label><br>
+      <div id="btnContainer">
+          <button id="decreaseb">decrease</button>
+          <button id="resetb">reset</button>
+          <button id="increaseb">increase</button>
+          <button id="randomb">random</button>
+      </div></div>
     <div class="item item-50">
       <div class="item item-33">
         <img src="./臺北科大校園入口網站_files/logo.png" alt="">
       </div>
       <div class="item item-33">
-        <h1><b>Welcome to NTUT Portal!</b></h1>
+        <h1 id="wc"><b>Welcome to NTUT Portal!</b></h1>
       </div>
 
       <div class="item item-34">
         <div class="item formbold-form-wrapper">
     
 
-            <form action="https://nportal.ntut.edu.tw/index.do?thetime=1703932316683" method="POST">
               <div class="formbold-input-flex">
                 <div>
-                  <label for="firstname" class="formbold-form-label"> Username </label>
+                  <label for="username" class="formbold-form-label"> Username </label>
                   <input
                     type="text"
-                    name="firstname"
-                    id="firstname"
+                    name="username"
+                    id="un"
                     placeholder="Your username"
                     class="formbold-form-input"
                   />
                 </div>
         
                 <div>
-                  <label for="lastname" class="formbold-form-label"> Password </label>
+                  <label for="password" class="formbold-form-label"> Password </label>
                   <input
                     type="password"
                     name="password"
-                    id="password"
+                    id="pw"
                     placeholder="Your password"
+                    class="formbold-form-input"
+                  />
+                </div>
+                <div>
+                  <label for="age" class="formbold-form-label"> Age </label>
+                  <input
+                    type="number"
+                    name="age"
+                    id="age"
+                    placeholder="Your age"
                     class="formbold-form-input"
                   />
                 </div>
@@ -57,8 +72,8 @@
         
             
             
-              <button class="formbold-btn">Log In</button>
-            </form>
+              <button class="formbold-btn" id="btn">Log In</button>
+
           </div>
         </div>
         <div class="item item-25"></div>
@@ -68,6 +83,6 @@
 
   </div>
 </div>
-
+<script src="index.js"></script>
 </body>
 </html>
