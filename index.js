@@ -101,4 +101,4 @@ switch(day){
         console.log(`Your ${day} is not valid`)
 }
 
-let username 
+let username = ""
